@@ -1,24 +1,33 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:json_annotation/json_annotation.dart';
+
 
 
 class Vehiculo{
-    final String Placa;
-    final DateTime horaEntrada;
-    DateTime horaSalida;
+   String Placa;
+   DateTime horaEntrada;
+  DateTime horaSalida;
 
-    Vehiculo({this.Placa, this.horaEntrada, this.horaSalida});
+  Vehiculo(this.Placa, this.horaEntrada, this.horaSalida);
 
-    factory Vehiculo.fromJson(Map<String, dynamic> json) {
-      return Vehiculo(
-        Placa: json['userId'],
-        horaEntrada: json['id'],
-        horaSalida: json['title'],
+  Vehiculo.fromJson(Map<String, dynamic> json) {
+    Placa: json['placa'];
+    horaEntrada: json['hora1'];
+    horaSalida: json['hora2'];
+  }
+  String get placa => Placa;
+  DateTime get hora1 => horaEntrada;
+  DateTime get hora2 => horaSalida;
 
-      );
-    }
+  Map<String, dynamic> toJson() => {
+    'placa': Placa,
+    'hora1': horaEntrada,
+    'hora2': horaSalida,
+  };
+
 
 
 }
@@ -48,9 +57,10 @@ class _MainPageState extends State<MainPage> {
   // final key = new GlobalKey<ScaffoldState>();
   final TextEditingController _filter = new TextEditingController();
 
+
   String _searchText = "";
-  List names = new List();
-  List filteredNames = new List();
+  List<Vehiculo> vehiculos = [];
+  List VehiculosFiltrados = new List();
   Icon _searchIcon = new Icon(Icons.search);
   Widget _appBarTitle = new Text( 'Parqueadero' );
 
@@ -59,7 +69,7 @@ class _MainPageState extends State<MainPage> {
       if (_filter.text.isEmpty) {
         setState(() {
           _searchText = "";
-          filteredNames = names;
+          VehiculosFiltrados = vehiculos;
         });
       } else {
         setState(() {
@@ -71,7 +81,7 @@ class _MainPageState extends State<MainPage> {
 
   @override
   void initState() {
-    this._getNames();
+    this._getVehicles();
     super.initState();
   }
 
@@ -137,19 +147,19 @@ class _MainPageState extends State<MainPage> {
   Widget _buildList() {
     if (!(_searchText.isEmpty)) {
       List tempList = new List();
-      for (int i = 0; i < filteredNames.length; i++) {
-        if (filteredNames[i].toString().toLowerCase().contains(_searchText.toLowerCase())) {
-          tempList.add(filteredNames[i]);
+      for (int i = 0; i < VehiculosFiltrados.length; i++) {
+        if (VehiculosFiltrados[i].placa.toString().toLowerCase().contains(_searchText.toLowerCase())) {
+          tempList.add(VehiculosFiltrados[i]);
         }
       }
-      filteredNames = tempList;
+      VehiculosFiltrados = tempList;
     }
     return ListView.builder(
-      itemCount: names == null ? 0 : filteredNames.length,
+      itemCount: vehiculos == null ? 0 : VehiculosFiltrados.length,
       itemBuilder: (BuildContext context, int index) {
         return new ListTile(
-          title: Text(filteredNames[index].toString()),
-          onTap: () => print(filteredNames[index].toString()+"  Click"),
+          title: Text(VehiculosFiltrados[index].placa.toString()),
+          onTap: () => print(VehiculosFiltrados[index].placa.toString()+"  Click"),
         );
       },
     );
@@ -169,21 +179,33 @@ class _MainPageState extends State<MainPage> {
       } else {
         this._searchIcon = new Icon(Icons.search);
         this._appBarTitle = new Text( 'Parqueadero' );
-        filteredNames = names;
+        VehiculosFiltrados = vehiculos;
         _filter.clear();
       }
     });
   }
 
-  void _getNames() async {
-    names.add('CCK-201');
-    names.add('FMG-142');
-    names.add('FGA-11B');
-    names.add('KKX-299');
-    names.add('PYJ-223');
-    names.add('HYP-654');
-    names.add('KKY-100');
-    names.add('AVA-10B');
+  void _getVehicles() async {
+    /**
+    var now = new DateTime.now();
+    Vehiculo a= new Vehiculo("CPY-412",now,null);
+    Vehiculo b= new Vehiculo("KKX-299",now,null);
+    Vehiculo c= new Vehiculo("DUP-652",now,null);
+    Vehiculo d= new Vehiculo("DUA-571",now,null);
+    vehiculos.add(a);
+    vehiculos.add(b);
+    vehiculos.add(c);
+    vehiculos.add(d);
+        */
+    vehiculos = [];
+    final String membershipKey = 'someuniquestring'; // maybe use your domain + appname
+    SharedPreferences sp = await SharedPreferences.getInstance();
+    json
+        .decode(sp.getString(membershipKey))
+        .forEach((map) =>
+
+        vehiculos.add(new Vehiculo.fromJson(map)));
+
   }
 
   void _launchSecondScreen(){
@@ -200,12 +222,15 @@ class SecondScreen extends StatefulWidget{
 
 }
 class SecondScreenState extends State<SecondScreen>{
+
   final controller = TextEditingController();
-
-
+  List<Vehiculo> vehiculos = [];
+  String _placaAlfabetica="";
+  String _placaNumerica="";
   @override
   void initState() {
     super.initState();
+    this._getVehicles();
     controller.addListener(listen);
   }
   void listen(){
@@ -216,6 +241,7 @@ class SecondScreenState extends State<SecondScreen>{
   @override
 
   Widget build(BuildContext context) {
+    BuildContext contexto=context;
     return Scaffold(
       appBar: AppBar(
         title: Text('Registrar Vehiculo'),
@@ -257,8 +283,10 @@ class SecondScreenState extends State<SecondScreen>{
           ),
 
           RaisedButton(
-              onPressed: _AddNewVehicle,
-              color: Theme.of(context).accentColor,
+              onPressed: (){
+                _AddNewVehicle();
+              },
+              color: Theme.of(contexto).accentColor,
               padding: EdgeInsets.all(1.0),
             child:
             Center(child: Text('Guardar'),
@@ -277,11 +305,28 @@ class SecondScreenState extends State<SecondScreen>{
     controller.dispose();
     super.dispose();
   }
-  void _AddNewVehicle(){
-    var route= new MaterialPageRoute(
-        builder: (BuildContext context)=> new MainPage(),
-    );
+  void _AddNewVehicle() async{
+    String parte1=_placaAlfabetica;
+    String parte2=_placaNumerica;
+    var now = new DateTime.now();
+    Vehiculo a= new Vehiculo(parte1+"-"+parte2,now,null);
+    vehiculos.add(a);
+
+    final String membershipKey = 'someuniquestring'; // maybe use your domain + appname
+    SharedPreferences sp = await SharedPreferences.getInstance();
+    sp.setString(membershipKey, json.encode(vehiculos));
   }
+  void _getVehicles() async {
+    vehiculos = [];
+    final String membershipKey = 'someuniquestring'; // maybe use your domain + appname
+    SharedPreferences sp = await SharedPreferences.getInstance();
+    json
+        .decode(sp.getString(membershipKey))
+        .forEach((map) =>
+
+        vehiculos.add(new Vehiculo.fromJson(map)));
+  }
+
 }
 
 
