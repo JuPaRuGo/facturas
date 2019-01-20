@@ -3,21 +3,38 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:http/http.dart' as http;
+import 'package:fluttertoast/fluttertoast.dart';
 
+/*fetchPost() async {
+  final response =
+  await http.get('https://jsonplaceholder.typicode.com/posts/1');
 
+  if (response.statusCode == 200) {
+    // If the call to the server was successful, parse the JSON
+    return Vehiculo.fromJson(json.decode(response.body));
+
+  } else {
+    // If that call was not successful, throw an error.
+    throw Exception('Failed to load post');
+  }
+}*/
 
 class Vehiculo{
-   String Placa;
-   DateTime horaEntrada;
+  String Placa;
+  DateTime horaEntrada;
   DateTime horaSalida;
 
-  Vehiculo(this.Placa, this.horaEntrada, this.horaSalida);
+  Vehiculo({this.Placa, this.horaEntrada, this.horaSalida});
 
-  Vehiculo.fromJson(Map<String, dynamic> json) {
-    Placa: json['placa'];
-    horaEntrada: json['hora1'];
-    horaSalida: json['hora2'];
+  factory Vehiculo.fromJson(Map<String, dynamic> json) {
+    return Vehiculo(
+      Placa: json['placa'],
+      horaEntrada: json['hora1'],
+      horaSalida: json['hora2'],
+    );
   }
+
   String get placa => Placa;
   DateTime get hora1 => horaEntrada;
   DateTime get hora2 => horaSalida;
@@ -47,7 +64,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MainPage extends StatefulWidget {
-   MainPage({ Key key }) : super(key: key);
+  MainPage({ Key key }) : super(key: key);
   @override
   _MainPageState createState() => new _MainPageState();
 }
@@ -123,10 +140,10 @@ class _MainPageState extends State<MainPage> {
 
       ),
       floatingActionButton: FloatingActionButton(
-      onPressed: _launchSecondScreen,
-      tooltip: 'Increment',
-      child: Icon(Icons.add),
-    ),
+        onPressed: _launchSecondScreen,
+        tooltip: 'Increment',
+        child: Icon(Icons.add),
+      ),
 
       resizeToAvoidBottomPadding: false,
     );
@@ -186,26 +203,29 @@ class _MainPageState extends State<MainPage> {
   }
 
   void _getVehicles() async {
-    /**
-    var now = new DateTime.now();
-    Vehiculo a= new Vehiculo("CPY-412",now,null);
-    Vehiculo b= new Vehiculo("KKX-299",now,null);
-    Vehiculo c= new Vehiculo("DUP-652",now,null);
-    Vehiculo d= new Vehiculo("DUA-571",now,null);
-    vehiculos.add(a);
-    vehiculos.add(b);
-    vehiculos.add(c);
-    vehiculos.add(d);
-        */
     vehiculos = [];
-    final String membershipKey = 'someuniquestring'; // maybe use your domain + appname
-    SharedPreferences sp = await SharedPreferences.getInstance();
-    json
-        .decode(sp.getString(membershipKey))
-        .forEach((map) =>
+    final response =
+    await http.get('http://ruedadifusion.com/JP/Parqueadero/Vehicles.php');
 
-        vehiculos.add(new Vehiculo.fromJson(map)));
 
+    if (response.statusCode == 200) {
+
+      String LogicResponse=response.body;
+      final List parsedList = json.decode(LogicResponse); //assuming this json returns an array of signupresponse objects
+
+      vehiculos = parsedList.map((val) =>  Vehiculo.fromJson(val)).toList();
+      var dim=vehiculos.length.toString();
+      Fluttertoast.showToast(
+          msg: "DIM : "+dim,
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIos: 1
+      );
+
+    } else {
+      // If that call was not successful, throw an error.
+      throw Exception('Failed to load post');
+    }
   }
 
   void _launchSecondScreen(){
@@ -217,8 +237,8 @@ class _MainPageState extends State<MainPage> {
 class SecondScreen extends StatefulWidget{
   final List names;
   SecondScreen({ Key key, this.names }) : super(key: key);
-    @override
-    SecondScreenState createState()=> SecondScreenState();
+  @override
+  SecondScreenState createState()=> SecondScreenState();
 
 }
 class SecondScreenState extends State<SecondScreen>{
@@ -230,7 +250,7 @@ class SecondScreenState extends State<SecondScreen>{
   @override
   void initState() {
     super.initState();
-    this._getVehicles();
+
     controller.addListener(listen);
   }
   void listen(){
@@ -255,28 +275,28 @@ class SecondScreenState extends State<SecondScreen>{
             children: <Widget>[
 
               new Expanded(
-                flex: 5,
-                child: new Container(
-                  width: 160.0,
-                  padding: EdgeInsets.all(8.0),
-                  child: TextField(
-                      onChanged: (text) {
-                        print("First text field: $text");
-                      },
-                      decoration: const InputDecoration(labelText: 'Placas Alfabeticas')
-                  ),
-                )
+                  flex: 5,
+                  child: new Container(
+                    width: 160.0,
+                    padding: EdgeInsets.all(8.0),
+                    child: TextField(
+                        onChanged: (text) {
+                          print("First text field: $text");
+                        },
+                        decoration: const InputDecoration(labelText: 'Placas Alfabeticas')
+                    ),
+                  )
               ),
               new Expanded(
-                flex: 5,
-                child:  new Container(
-                  width: 160.0,
-                  padding: EdgeInsets.all(8.0),
-                  child: TextField(
-                      controller: controller,
-                      decoration: const InputDecoration(labelText: 'Placas Numericas')
-                  ),
-                )
+                  flex: 5,
+                  child:  new Container(
+                    width: 160.0,
+                    padding: EdgeInsets.all(8.0),
+                    child: TextField(
+                        controller: controller,
+                        decoration: const InputDecoration(labelText: 'Placas Numericas')
+                    ),
+                  )
               )
             ],
 
@@ -288,9 +308,9 @@ class SecondScreenState extends State<SecondScreen>{
               },
               color: Theme.of(contexto).accentColor,
               padding: EdgeInsets.all(1.0),
-            child:
-            Center(child: Text('Guardar'),
-            )
+              child:
+              Center(child: Text('Guardar'),
+              )
 
           ),
         ],
@@ -306,26 +326,9 @@ class SecondScreenState extends State<SecondScreen>{
     super.dispose();
   }
   void _AddNewVehicle() async{
-    String parte1=_placaAlfabetica;
-    String parte2=_placaNumerica;
-    var now = new DateTime.now();
-    Vehiculo a= new Vehiculo(parte1+"-"+parte2,now,null);
-    vehiculos.add(a);
 
-    final String membershipKey = 'someuniquestring'; // maybe use your domain + appname
-    SharedPreferences sp = await SharedPreferences.getInstance();
-    sp.setString(membershipKey, json.encode(vehiculos));
   }
-  void _getVehicles() async {
-    vehiculos = [];
-    final String membershipKey = 'someuniquestring'; // maybe use your domain + appname
-    SharedPreferences sp = await SharedPreferences.getInstance();
-    json
-        .decode(sp.getString(membershipKey))
-        .forEach((map) =>
 
-        vehiculos.add(new Vehiculo.fromJson(map)));
-  }
 
 }
 
