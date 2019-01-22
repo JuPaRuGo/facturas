@@ -1,64 +1,34 @@
-import 'package:flutter/material.dart';
-import 'dart:async';
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:json_annotation/json_annotation.dart';
+
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:fluttertoast/fluttertoast.dart';
 
-/*fetchPost() async {
-  final response =
-  await http.get('https://jsonplaceholder.typicode.com/posts/1');
+class Vehiculo {
+  final String placa;
+  final String horaEntrada;
+  final String horaSalida;
 
-  if (response.statusCode == 200) {
-    // If the call to the server was successful, parse the JSON
-    return Vehiculo.fromJson(json.decode(response.body));
-
-  } else {
-    // If that call was not successful, throw an error.
-    throw Exception('Failed to load post');
-  }
-}*/
-
-class Vehiculo{
-  String Placa;
-  DateTime horaEntrada;
-  DateTime horaSalida;
-
-  Vehiculo({this.Placa, this.horaEntrada, this.horaSalida});
+  Vehiculo({this.placa, this.horaEntrada, this.horaSalida});
 
   factory Vehiculo.fromJson(Map<String, dynamic> json) {
     return Vehiculo(
-      Placa: json['placa'],
-      horaEntrada: json['hora1'],
-      horaSalida: json['hora2'],
+      placa: json['placa'] as String,
+      horaEntrada: json['hora1'] as String,
+      horaSalida: json['hora2'] as String,
     );
   }
-
-  String get placa => Placa;
-  DateTime get hora1 => horaEntrada;
-  DateTime get hora2 => horaSalida;
-
-  Map<String, dynamic> toJson() => {
-    'placa': Placa,
-    'hora1': horaEntrada,
-    'hora2': horaSalida,
-  };
-
-
-
 }
 
-void main() => runApp(new MyApp());
+void main() => runApp(MyApp());
+
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return new MaterialApp(
-      title: 'App Parqueadero',
-      theme: new ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: new MainPage(),
+    final appTitle = 'Isolate Demo';
+
+    return MaterialApp(
+      title: appTitle,
+      home: MainPage(),
     );
   }
 }
@@ -70,13 +40,34 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
+  List<Vehiculo> vehiculos = List();
+
+  var isLoading = false;
+
+  _fetchData() async {
+    setState(() {
+      isLoading = true;
+    });
+    final response =
+    await http.get("http://ruedadifusion.com/JP/Parqueadero/Vehicles.php");
+    if (response.statusCode == 200) {
+      vehiculos = (json.decode(response.body) as List)
+          .map((data) => new Vehiculo.fromJson(data))
+          .toList();
+      setState(() {
+        isLoading = false;
+      });
+    } else {
+      throw Exception('Failed to load photos');
+    }
+  }
+
   // final formKey = new GlobalKey<FormState>();
   // final key = new GlobalKey<ScaffoldState>();
   final TextEditingController _filter = new TextEditingController();
 
-
   String _searchText = "";
-  List<Vehiculo> vehiculos = [];
+
   List VehiculosFiltrados = new List();
   Icon _searchIcon = new Icon(Icons.search);
   Widget _appBarTitle = new Text( 'Parqueadero' );
@@ -98,7 +89,7 @@ class _MainPageState extends State<MainPage> {
 
   @override
   void initState() {
-    this._getVehicles();
+    this._fetchData();
     super.initState();
   }
 
@@ -202,37 +193,9 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-  void _getVehicles() async {
-    vehiculos = [];
-    final response =
-    await http.get('http://ruedadifusion.com/JP/Parqueadero/Vehicles.php');
-
-
-    if (response.statusCode == 200) {
-
-      String LogicResponse=response.body;
-      final List parsedList = json.decode(LogicResponse); //assuming this json returns an array of signupresponse objects
-
-      vehiculos = parsedList.map((val) =>  Vehiculo.fromJson(val)).toList();
-      var dim=vehiculos.length.toString();
-      Fluttertoast.showToast(
-          msg: "DIM : "+dim,
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.CENTER,
-          timeInSecForIos: 1
-      );
-
-    } else {
-      // If that call was not successful, throw an error.
-      throw Exception('Failed to load post');
-    }
-  }
-
   void _launchSecondScreen(){
     Navigator.push(context, MaterialPageRoute(builder: (context)=>SecondScreen()));
   }
-
-
 }
 class SecondScreen extends StatefulWidget{
   final List names;
@@ -241,27 +204,27 @@ class SecondScreen extends StatefulWidget{
   SecondScreenState createState()=> SecondScreenState();
 
 }
-class SecondScreenState extends State<SecondScreen>{
+class SecondScreenState extends State<SecondScreen> {
 
   final controller = TextEditingController();
   List<Vehiculo> vehiculos = [];
-  String _placaAlfabetica="";
-  String _placaNumerica="";
+  String _placaAlfabetica = "";
+  String _placaNumerica = "";
+
   @override
   void initState() {
     super.initState();
 
     controller.addListener(listen);
   }
-  void listen(){
-    print("Second text field: ${controller.text}");
 
+  void listen() {
+    print("Second text field: ${controller.text}");
   }
 
   @override
-
   Widget build(BuildContext context) {
-    BuildContext contexto=context;
+    BuildContext contexto = context;
     return Scaffold(
       appBar: AppBar(
         title: Text('Registrar Vehiculo'),
@@ -283,18 +246,20 @@ class SecondScreenState extends State<SecondScreen>{
                         onChanged: (text) {
                           print("First text field: $text");
                         },
-                        decoration: const InputDecoration(labelText: 'Placas Alfabeticas')
+                        decoration: const InputDecoration(
+                            labelText: 'Placas Alfabeticas')
                     ),
                   )
               ),
               new Expanded(
                   flex: 5,
-                  child:  new Container(
+                  child: new Container(
                     width: 160.0,
                     padding: EdgeInsets.all(8.0),
                     child: TextField(
                         controller: controller,
-                        decoration: const InputDecoration(labelText: 'Placas Numericas')
+                        decoration: const InputDecoration(
+                            labelText: 'Placas Numericas')
                     ),
                   )
               )
@@ -303,10 +268,12 @@ class SecondScreenState extends State<SecondScreen>{
           ),
 
           RaisedButton(
-              onPressed: (){
+              onPressed: () {
                 _AddNewVehicle();
               },
-              color: Theme.of(contexto).accentColor,
+              color: Theme
+                  .of(contexto)
+                  .accentColor,
               padding: EdgeInsets.all(1.0),
               child:
               Center(child: Text('Guardar'),
@@ -325,11 +292,8 @@ class SecondScreenState extends State<SecondScreen>{
     controller.dispose();
     super.dispose();
   }
-  void _AddNewVehicle() async{
+
+  void _AddNewVehicle() async {
 
   }
-
-
 }
-
-
