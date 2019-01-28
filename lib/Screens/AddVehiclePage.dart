@@ -40,9 +40,7 @@ class AddVehiclePageState extends State<AddVehiclePage>{
       json
           .decode(sp.getString(membershipKey))
           .forEach((map) => vehiculosMensuales.add(new VehiculoMensualidad.fromJson(map)));
-
     }
-
   }
   void listen() {
     print("Second text field: ${controller.text}");
@@ -138,12 +136,13 @@ class AddVehiclePageState extends State<AddVehiclePage>{
     if(_placaAlfabetica.length==3){
       if(_placaNumerica.length>=2 &&_placaNumerica.length<4){
         //YYYY-MM-DD HH:MI:SS
-        var now=DateFormat("yyy-MM-dd kk:mm:ss").format(DateTime.now());
         if(widget.esParticular==true){
+          var now=DateFormat("yyy-MM-dd kk:mm:ss").format(DateTime.now());
           Vehiculo _vehiculo= new Vehiculo(_placaAlfabetica+"-"+_placaNumerica, now.toString(), "");
           vehiculos.add(_vehiculo);
           _PersistParticularVehicles();
         }else{
+          var now=DateFormat("yyy-MM-dd").format(DateTime.now());
           VehiculoMensualidad _car=new VehiculoMensualidad(_placaAlfabetica+"-"+_placaNumerica, now.toString(), "");
           vehiculosMensuales.add(_car);
           _PersistMonthlyVehicles();

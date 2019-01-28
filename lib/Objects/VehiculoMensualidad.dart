@@ -5,6 +5,7 @@ import 'dart:convert';
 @JsonSerializable()
 class VehiculoMensualidad {
   String placa;
+  String idVehiculo;
   String FechaEntrada;
   String FechaDeVencimiento;
   String MananaJson;
@@ -16,6 +17,7 @@ class VehiculoMensualidad {
 
   VehiculoMensualidad.fromJson(Map<String, dynamic> json)
       : placa = json['placa'] as String,
+        idVehiculo= json['id'] as String,
         FechaEntrada = json['fecha1'] as String,
         FechaDeVencimiento = json['fecha2'] as String,
         MananaJson= json['manana'] as String,
@@ -24,6 +26,7 @@ class VehiculoMensualidad {
   Map<String, dynamic> toJson() =>
       {
         'placa': this.placa,
+        'id': this.idVehiculo,
         'fecha1': this.FechaEntrada,
         'fecha2': this.FechaDeVencimiento,
         'manana': this.MananaJson,

@@ -13,7 +13,6 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-
   List<Vehiculo> vehiculos;
   var isLoading = false;
   String json_string;
@@ -30,7 +29,6 @@ class _MainPageState extends State<MainPage> {
       isLoading = false;
     });
   }
-
   _fetchData() async {
     setState(() {
       isLoading = true;
@@ -81,10 +79,17 @@ class _MainPageState extends State<MainPage> {
   @override
   initState() {
     super.initState();
-    this.getCarsFromJson();
-    //_fetchData();
-    vehiculos = List<Vehiculo>();
+    this.getCarsFromJson(); //primero se obtienen del json
     VehiculosFiltrados = new List<Vehiculo>();
+    if(vehiculos==null){//si no se encontro nada del json se busca del internet
+        vehiculos = List<Vehiculo>();
+        _fetchData();
+        this._PersistParticularVehicles();
+        }
+    if(vehiculos==null){
+      vehiculos=new List<Vehiculo>();
+    }
+
   }
 
   Widget build(BuildContext context) {
@@ -110,7 +115,7 @@ class _MainPageState extends State<MainPage> {
                           elevation: 4.0,
                           splashColor: Colors.blueGrey,
                           onPressed: () {
-                            // Perform some action
+                            SubirVehiculos();
                           },
                         ),
                         padding: EdgeInsets.all(8),
@@ -123,7 +128,7 @@ class _MainPageState extends State<MainPage> {
                           elevation: 4.0,
                           splashColor: Colors.blueGrey,
                           onPressed: () {
-                            // Perform some action
+                            _fetchData();
                           },
                         ),
                         padding: EdgeInsets.all(8),
@@ -175,7 +180,7 @@ class _MainPageState extends State<MainPage> {
           subtitle: Text(DateFormat("HH:mm").format(DateTime.parse(carro.horaEntrada))),
           onTap: (){
             print("cambio "+carro.horaEntrada);
-            this._showDialog(carro);
+            this._showDialog(carro,index);
           }
 
         );
@@ -202,7 +207,7 @@ class _MainPageState extends State<MainPage> {
       }
     });
   }
-  void _showDialog(Vehiculo v) {
+  void _showDialog(Vehiculo v,int index) {
     // flutter defined function
     showDialog(
       context: context,
@@ -216,6 +221,8 @@ class _MainPageState extends State<MainPage> {
             new FlatButton(
               child: new Text("Pagar"),
               onPressed: () {
+                vehiculos.removeAt(index);
+                this._PersistParticularVehicles();
                 Navigator.of(context).pop();
               },
             ),
@@ -279,5 +286,24 @@ class _MainPageState extends State<MainPage> {
     }
 
     return cost;
+  }
+  void SubirVehiculos(){
+    for(var i=0; i<vehiculos.length;i++){
+      Vehiculo v= vehiculos[i];
+      var client = new http.Client();
+      String url="http://ruedadifusion.com/JP/Parqueadero/AddParticularVehicle.php";
+      client.post(
+          url,
+          body: {"entrada": v.horaEntrada, "placa": v.horaSalida})
+          .then((response) => print(response.body))
+          .whenComplete(client.close);
+
+    }
+
+    }
+  void _PersistParticularVehicles() async{
+    final String membershipKey = 'jsoncars'; // maybe use your domain + appname
+    SharedPreferences sp = await SharedPreferences.getInstance();
+    await sp.setString(membershipKey, json.encode(vehiculos));
   }
 }

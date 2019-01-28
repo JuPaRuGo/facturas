@@ -22,12 +22,21 @@ class _StateMensualities extends State<MensualitiesScreen> {
   var isLoading = false;
   String json_string;
   DateTime selectedDate = DateTime.now();
+  int lastIndex;
+
   @override
   void initState() {
     super.initState();
     vehiculos=new List<VehiculoMensualidad>();
-    //this.getCarsFromJson();
-    this._fetchData("");
+    this.getCarsFromJson(); //primero se obtienen del json
+    if(vehiculos==null){//si no se encontro nada del json se busca del internet
+      vehiculos = List<VehiculoMensualidad>();
+      _fetchData("");
+      this._PersistMonthlyVehicles();
+    }
+    if(vehiculos==null){
+      vehiculos=new List<VehiculoMensualidad>();
+    }
 
   }
   @override
@@ -56,7 +65,7 @@ class _StateMensualities extends State<MensualitiesScreen> {
                       elevation: 4.0,
                       splashColor: Colors.blueGrey,
                       onPressed: () {
-                        // Perform some action
+                        SubirVehiculos();
                       },
                     ),
                     padding: EdgeInsets.all(8),
@@ -69,7 +78,7 @@ class _StateMensualities extends State<MensualitiesScreen> {
                         elevation: 4.0,
                         splashColor: Colors.blueGrey,
                         onPressed: () {
-                          // Perform some action
+                          _fetchData("");
                         },
                       ),
 
@@ -132,6 +141,7 @@ class _StateMensualities extends State<MensualitiesScreen> {
                             controlAffinity: ListTileControlAffinity.leading,
                             onChanged: (bool val) {
                               ItemChange(val, index);
+                              this._PersistMonthlyVehicles();
                             }
                         ),
                       ),
@@ -144,6 +154,7 @@ class _StateMensualities extends State<MensualitiesScreen> {
                             controlAffinity: ListTileControlAffinity.leading,
                             onChanged: (bool val) {
                               ItemChangeCheckBox2(val, index);
+                              this._PersistMonthlyVehicles();
                             }
                         )
                         ,
@@ -159,26 +170,29 @@ class _StateMensualities extends State<MensualitiesScreen> {
     );
   }
   void ItemChange(bool val,int index){
-    setState(() {
-      String estado="0";
-      if(val){
-        estado="1";
-      }
-      vehiculos[index].MananaJson=estado;
-      vehiculos[index].Manana=val;
-    });
+
+      setState(() {
+        String estado="0";
+        if(val){
+          estado="1";
+        }
+        vehiculos[index].MananaJson=estado;
+        vehiculos[index].Manana=val;
+      });
   }
   void ItemChangeCheckBox2(bool val,int index){
-    setState(() {
-      String estado="0";
-      if(val){
-        estado="1";
-      }
-      vehiculos[index].TardeJson=estado;
-      vehiculos[index].Tarde=val;
-    });
+
+      setState(() {
+        String estado="0";
+        if(val){
+          estado="1";
+        }
+        vehiculos[index].TardeJson=estado;
+        vehiculos[index].Tarde=val;
+      });
+
   }
-  getCarsFromJson() async{
+  Future getCarsFromJson() async{
     setState(() {
       isLoading = true;
     });
@@ -231,7 +245,6 @@ class _StateMensualities extends State<MensualitiesScreen> {
         setState(() {
           isLoading = false;
           for(var i=0; i<vehiculos.length;i++){
-            print("se lleno booleana");
             vehiculos[i].fillBoleans();
           }
         });
@@ -255,7 +268,50 @@ class _StateMensualities extends State<MensualitiesScreen> {
     if (picked != null && picked != selectedDate)
       setState(() {
         selectedDate = picked;
+        this._fetchData(DateFormat("yyy-MM-dd").format(selectedDate).toString());
       });
   }
 
+
+  void SubirVehiculos(){
+      print("Subiendo");
+      this.getLastIndex();
+      for(var i=lastIndex;i<vehiculos.length;i++){
+        VehiculoMensualidad v=vehiculos[i];
+        var client = new http.Client();
+        String url="http://ruedadifusion.com/JP/Parqueadero/AddMonthlyVehicle.php";
+        client.post(
+            url,
+            body: {"entrada": v.FechaEntrada, "placa": v.placa })
+            .then((response) => print(response.body))
+            .whenComplete(client.close);
+      }
+
+      for(var i=0;i<vehiculos.length;i++){
+        VehiculoMensualidad v=vehiculos[i];
+        var client = new http.Client();
+        String url="http://ruedadifusion.com/JP/Parqueadero/AddToRegister.php";
+        client.post(
+            url,
+            body: {"fecha": selectedDate, "id": v.placa,"m": v.MananaJson, "t": v.TardeJson })
+            .then((response) => print(response.body))
+            .whenComplete(client.close);
+      }
+  }
+  void _PersistMonthlyVehicles() async{
+      final String membershipKey = 'jsoncarsm'; // maybe use your domain + appname
+      SharedPreferences sp = await SharedPreferences.getInstance();
+      await sp.setString(membershipKey, json.encode(vehiculos));
+  }
+  Future getLastIndex() async{
+    final response =
+        await http.get('http://ruedadifusion.com/JP/Parqueadero/GetLastIndex.php');
+    if (response.statusCode == 200) {
+      lastIndex=int.parse(response.body);
+    } else {
+      // If that call was not successful, throw an error.
+      throw Exception('Failed to load post');
+    }
+
+  }
 }
