@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -25,7 +26,9 @@ class _StateMensualities extends State<MensualitiesScreen> {
   void initState() {
     super.initState();
     vehiculos=new List<VehiculoMensualidad>();
-    this.getCarsFromJson();
+    //this.getCarsFromJson();
+    this._fetchData("");
+
   }
   @override
   Widget build(BuildContext context) {
@@ -75,7 +78,12 @@ class _StateMensualities extends State<MensualitiesScreen> {
                     IconButton(
                       icon: Icon(Icons.calendar_today),
                       tooltip: 'Calendario',
-                      onPressed: () { setState(() { _selectDate(context); }); },
+                      onPressed: () {
+                        setState(() {
+                          _selectDate(context);
+                          print("fecha"+DateFormat("yyy-MM-dd").format(selectedDate).toString());
+                          this._fetchData(DateFormat("yyy-MM-dd").format(selectedDate).toString());
+                        }); },
                     )
                   ],
                 )
@@ -106,7 +114,7 @@ class _StateMensualities extends State<MensualitiesScreen> {
                         fontSize: 22.0,
                       )
                   ),
-                  Text("Mensualidad vence: "+vehiculos[index].horaSalida,
+                  Text("Mensualidad vence: "+vehiculos[index].FechaDeVencimiento,
                       textAlign: TextAlign.center,
                       style: new TextStyle(
                         fontSize: 14.0,
@@ -152,11 +160,21 @@ class _StateMensualities extends State<MensualitiesScreen> {
   }
   void ItemChange(bool val,int index){
     setState(() {
+      String estado="0";
+      if(val){
+        estado="1";
+      }
+      vehiculos[index].MananaJson=estado;
       vehiculos[index].Manana=val;
     });
   }
   void ItemChangeCheckBox2(bool val,int index){
     setState(() {
+      String estado="0";
+      if(val){
+        estado="1";
+      }
+      vehiculos[index].TardeJson=estado;
       vehiculos[index].Tarde=val;
     });
   }
@@ -174,23 +192,54 @@ class _StateMensualities extends State<MensualitiesScreen> {
     });
   }
 
-  _fetchData() async {
-    setState(() {
-      isLoading = true;
-    });
-    final response =
-    await http.get("http://ruedadifusion.com/JP/Parqueadero/VehiclesM.php");
-    if (response.statusCode == 200) {
-      json_string=response.body;
-      vehiculos = (json.decode(response.body) as List)
-          .map((data) => new VehiculoMensualidad.fromJson(data))
-          .toList();
+  _fetchData(String param) async {
+    if(param.length>0){
       setState(() {
-        isLoading = false;
+        isLoading = true;
       });
-    } else {
-      throw Exception('Failed to load photos');
+      String direccion="http://ruedadifusion.com/JP/Parqueadero/MonthlyVehicles.php?fecha="+param;
+      print("direccion = "+direccion);
+      final response =
+      await http.get(direccion);
+      if (response.statusCode == 200) {
+        json_string=response.body;
+        vehiculos = (json.decode(response.body) as List)
+            .map((data) => new VehiculoMensualidad.fromJson(data))
+            .toList();
+        setState(() {
+          isLoading = false;
+          for(var i=0; i<vehiculos.length;i++){
+            vehiculos[i].fillBoleans();
+          }
+        });
+      } else {
+        throw Exception('Failed to load photos');
+      }
+
+    }else{
+      setState(() {
+        isLoading = true;
+      });
+      final response =
+      await http.get("http://ruedadifusion.com/JP/Parqueadero/MonthlyVehicles.php");
+      if (response.statusCode == 200) {
+        json_string=response.body;
+        print("json: "+json_string);
+        vehiculos = (json.decode(response.body) as List)
+            .map((data) => new VehiculoMensualidad.fromJson(data))
+            .toList();
+        setState(() {
+          isLoading = false;
+          for(var i=0; i<vehiculos.length;i++){
+            print("se lleno booleana");
+            vehiculos[i].fillBoleans();
+          }
+        });
+      } else {
+        throw Exception('Failed to load photos');
+      }
     }
+
   }
   void saveDataInPreferences() async{
     final String membershipKey = 'jsoncarsm'; // maybe use your domain + appname
