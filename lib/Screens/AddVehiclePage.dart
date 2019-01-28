@@ -2,14 +2,10 @@ import 'dart:convert';
 import 'package:facturas/Objects/VehiculoMensualidad.dart';
 import 'package:facturas/Screens/Home.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:json_annotation/json_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'dart:async';
-import 'package:flutter_calendar/flutter_calendar.dart';
-
+import 'package:intl/intl.dart';
 import '../Objects/Vehiculo.dart';
+import 'package:flutter/services.dart';
 
 class AddVehiclePage extends StatefulWidget{
   bool esParticular;
@@ -62,8 +58,9 @@ class AddVehiclePageState extends State<AddVehiclePage>{
         automaticallyImplyLeading: false,
       ),
       body: Column(
+
         crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
           new Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -73,9 +70,13 @@ class AddVehiclePageState extends State<AddVehiclePage>{
                   flex: 5,
                   child: new Container(
                     width: 160.0,
+                    height: 200,
                     padding: EdgeInsets.all(8.0),
                     child: TextField(
+                        keyboardType: TextInputType.text,
+                        textCapitalization: TextCapitalization.characters,
                         onChanged: (text) {
+                          text.toLowerCase();
                           print("First text field: $text");
                           _placaAlfabetica=text;
                         },
@@ -88,9 +89,11 @@ class AddVehiclePageState extends State<AddVehiclePage>{
                   flex: 5,
                   child: new Container(
                     width: 160.0,
+                    height: 200,
                     padding: EdgeInsets.all(8.0),
                     child: TextField(
                         controller: controller,
+                        keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
                             labelText: 'Placas Numericas')
                     ),
@@ -99,20 +102,23 @@ class AddVehiclePageState extends State<AddVehiclePage>{
             ],
 
           ),
-
-          RaisedButton(
-              onPressed: () {
-                _AddNewVehicle();
-                this._launchFirstScreen();
-              },
-              color: Theme
-                  .of(contexto)
-                  .accentColor,
-              padding: EdgeInsets.all(10),
-              child:
-              Center(child: Text('Guardar'))
-
+      ButtonTheme(
+          minWidth: 300.0,
+          height: 100.0,
+          child:
+          new RaisedButton(
+            child: const Text('Guardar'),
+            color: Colors.blueAccent,
+            textColor: Colors.white,
+            elevation: 4.0,
+            splashColor: Colors.blueGrey,
+            onPressed: () {
+              this._AddNewVehicle();
+              this._launchFirstScreen();
+            },
           ),
+        ),
+
         ],
 
       ),
@@ -129,10 +135,10 @@ class AddVehiclePageState extends State<AddVehiclePage>{
     Navigator.push(context, MaterialPageRoute(builder: (context)=>Home()));
   }
   void _AddNewVehicle() async {
-
     if(_placaAlfabetica.length==3){
       if(_placaNumerica.length>=2 &&_placaNumerica.length<4){
-        var now = new DateTime.now();
+        //YYYY-MM-DD HH:MI:SS
+        var now=DateFormat("yyy-MM-dd kk:mm:ss").format(DateTime.now());
         if(widget.esParticular==true){
           Vehiculo _vehiculo= new Vehiculo(_placaAlfabetica+"-"+_placaNumerica, now.toString(), "");
           vehiculos.add(_vehiculo);

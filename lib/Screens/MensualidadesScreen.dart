@@ -20,6 +20,7 @@ class _StateMensualities extends State<MensualitiesScreen> {
   List<VehiculoMensualidad> vehiculos;
   var isLoading = false;
   String json_string;
+  DateTime selectedDate = DateTime.now();
   @override
   void initState() {
     super.initState();
@@ -68,9 +69,14 @@ class _StateMensualities extends State<MensualitiesScreen> {
                           // Perform some action
                         },
                       ),
+
                       padding: EdgeInsets.all(8),
                     ),
-
+                    IconButton(
+                      icon: Icon(Icons.calendar_today),
+                      tooltip: 'Calendario',
+                      onPressed: () { setState(() { _selectDate(context); }); },
+                    )
                   ],
                 )
             ),  
@@ -95,28 +101,48 @@ class _StateMensualities extends State<MensualitiesScreen> {
               child: new Column(
                 children: <Widget>[
                   Text(vehiculos[index].placa,
+                      textAlign: TextAlign.center,
                       style: new TextStyle(
-                        fontSize: 20.0,
+                        fontSize: 22.0,
                       )
                   ),
-                  new CheckboxListTile(
-                      value: vehiculos[index].Manana,
-                      activeColor: Colors.amberAccent,
-                      title: new Text("Dia"),
-                      controlAffinity: ListTileControlAffinity.leading,
-                      onChanged: (bool val) {
-                        ItemChange(val, index);
-                      }
+                  Text("Mensualidad vence: "+vehiculos[index].horaSalida,
+                      textAlign: TextAlign.center,
+                      style: new TextStyle(
+                        fontSize: 14.0,
+                      )
                   ),
-                  new CheckboxListTile(
-                      value: vehiculos[index].Tarde,
-                      activeColor: Colors.black87,
-                      title: new Text("Tarde"),
-                      controlAffinity: ListTileControlAffinity.leading,
-                      onChanged: (bool val) {
-                        ItemChangeCheckBox2(val, index);
-                      }
-                  )
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Expanded(
+                        child: new CheckboxListTile(
+                            value: vehiculos[index].Manana,
+                            activeColor: Colors.amberAccent,
+                            title: new Text("Dia"),
+                            controlAffinity: ListTileControlAffinity.leading,
+                            onChanged: (bool val) {
+                              ItemChange(val, index);
+                            }
+                        ),
+                      ),
+
+                      Expanded(
+                        child: new CheckboxListTile(
+                            value: vehiculos[index].Tarde,
+                            activeColor: Colors.black87,
+                            title: new Text("Tarde"),
+                            controlAffinity: ListTileControlAffinity.leading,
+                            onChanged: (bool val) {
+                              ItemChangeCheckBox2(val, index);
+                            }
+                        )
+                        ,
+                      )
+                    ],
+                  ),
+
                 ],
               ),
             ),
@@ -171,4 +197,16 @@ class _StateMensualities extends State<MensualitiesScreen> {
     SharedPreferences sp = await SharedPreferences.getInstance();
     await sp.setString(membershipKey, json.encode(vehiculos));
   }
+  Future<Null> _selectDate(BuildContext context) async {
+    final DateTime picked = await showDatePicker(
+        context: context,
+        initialDate: selectedDate,
+        firstDate: DateTime(2015, 8),
+        lastDate: DateTime(2101));
+    if (picked != null && picked != selectedDate)
+      setState(() {
+        selectedDate = picked;
+      });
+  }
+
 }

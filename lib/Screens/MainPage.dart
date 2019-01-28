@@ -3,13 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:json_annotation/json_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'dart:async';
-import 'package:flutter_calendar/flutter_calendar.dart';
 import 'package:intl/intl.dart';
-
 import '../Objects/Vehiculo.dart';
-import 'AddVehiclePage.dart';
 
 class MainPage extends StatefulWidget {
   MainPage({ Key key }) : super(key: key);
@@ -51,7 +46,7 @@ class _MainPageState extends State<MainPage> {
         isLoading = false;
       });
     } else {
-      throw Exception('Failed to load photos');
+      throw Exception('Failed to load cars');
     }
   }
 
@@ -60,16 +55,16 @@ class _MainPageState extends State<MainPage> {
   final TextEditingController _filter = new TextEditingController();
   String _searchText = "";
   List<Vehiculo> VehiculosFiltrados;
+
   Icon _searchIcon = new Icon(Icons.search);
   Widget _appBarTitle = new Text( 'Parqueadero' );
 
   _MainPageState() {
-    VehiculosFiltrados=vehiculos;
     _filter.addListener(() {
       if (_filter.text.isEmpty) {
         setState(() {
           _searchText = "";
-          VehiculosFiltrados = vehiculos;
+
         });
       } else {
         setState(() {
@@ -78,7 +73,6 @@ class _MainPageState extends State<MainPage> {
       }
     });
   }
-
   void saveDataInPreferences() async{
     final String membershipKey = 'jsoncars'; // maybe use your domain + appname
     SharedPreferences sp = await SharedPreferences.getInstance();
@@ -87,8 +81,8 @@ class _MainPageState extends State<MainPage> {
   @override
   initState() {
     super.initState();
-    //this._fetchData();
     this.getCarsFromJson();
+    //_fetchData();
     vehiculos = List<Vehiculo>();
     VehiculosFiltrados = new List<Vehiculo>();
   }
@@ -158,6 +152,9 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget _buildList() {
+    if(VehiculosFiltrados.length<1){
+      VehiculosFiltrados=vehiculos;
+    }
     if (!(_searchText.isEmpty)) {
       List<Vehiculo> tempList = new List<Vehiculo>();
       for (int i = 0; i < VehiculosFiltrados.length; i++) {
@@ -172,10 +169,15 @@ class _MainPageState extends State<MainPage> {
     return ListView.builder(
       itemCount: vehiculos == null ? 0 : VehiculosFiltrados.length,
       itemBuilder: (BuildContext context, int index) {
+        Vehiculo carro=VehiculosFiltrados[index];
         return new ListTile(
-          title: Text(VehiculosFiltrados[index].placa.toString()),
-          subtitle: Text(DateFormat("HH:mm").format(DateTime.parse(VehiculosFiltrados[index].horaEntrada))),
-          onTap: () => this._showDialog(VehiculosFiltrados[index]),
+          title: Text(carro.placa.toString()),
+          subtitle: Text(DateFormat("HH:mm").format(DateTime.parse(carro.horaEntrada))),
+          onTap: (){
+            print("cambio "+carro.horaEntrada);
+            this._showDialog(carro);
+          }
+
         );
       },
     );
@@ -250,7 +252,7 @@ class _MainPageState extends State<MainPage> {
   int GetHours(Vehiculo v){
     DateTime Entrada=DateTime.parse(v.horaEntrada);
     DateTime Salida=DateTime.parse(v.horaSalida);
-    return (Salida.difference(Entrada).inMinutes);
+    return (Salida.difference(Entrada).inHours);
   }
 
   int GetValueToPay(Vehiculo v){
@@ -267,6 +269,7 @@ class _MainPageState extends State<MainPage> {
         cost=HourValueBike*GetHours(v);
       }
     }else{
+      print("Horas"+GetHours(v).toString());
       bool isACar=DeterminarSiEsCarro(v.placa);
       if(isACar){
         cost=HourValueVehicle*GetHours(v)+HourValueVehicle;
