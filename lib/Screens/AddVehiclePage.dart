@@ -117,6 +117,12 @@ class AddVehiclePageState extends State<AddVehiclePage>{
           ),
         ),
 
+          IconButton(
+            icon: Icon(Icons.calendar_today),
+            onPressed: (){
+              _selectDate(context);
+            },
+          ),
         ],
 
       ),
@@ -141,9 +147,13 @@ class AddVehiclePageState extends State<AddVehiclePage>{
           Vehiculo _vehiculo= new Vehiculo(_placaAlfabetica+"-"+_placaNumerica, now.toString(), "");
           vehiculos.add(_vehiculo);
           _PersistParticularVehicles();
+          this._launchFirstScreen();
         }else{
-          _selectDate(context);
-
+          var now=DateFormat("yyy-MM-dd").format(selectedDate);
+          VehiculoMensualidad _car=new VehiculoMensualidad(_placaAlfabetica+"-"+_placaNumerica, now.toString(), selectedDate.add(new Duration(days: 31)).toString());
+          vehiculosMensuales.add(_car);
+          _PersistMonthlyVehicles();
+          this._launchFirstScreen();
         }
       }
     }
@@ -168,11 +178,6 @@ class AddVehiclePageState extends State<AddVehiclePage>{
     if (picked != null && picked != selectedDate)
       setState(() {
         selectedDate = picked;
-        var now=DateFormat("yyy-MM-dd").format(selectedDate);
-        VehiculoMensualidad _car=new VehiculoMensualidad(_placaAlfabetica+"-"+_placaNumerica, now.toString(), selectedDate.add(new Duration(days: 31)).toString());
-        vehiculosMensuales.add(_car);
-        _PersistMonthlyVehicles();
-        this._launchFirstScreen();
       });
   }
 

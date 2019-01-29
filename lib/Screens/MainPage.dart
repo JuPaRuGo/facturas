@@ -27,7 +27,7 @@ class _MainPageState extends State<MainPage> {
 
   Choice _selectedChoice = choices[0]; // The app's "state".
 
-  getCarsFromJson() async{
+  Future getCarsFromJson() async{
     setState(() {
       isLoading = true;
     });
