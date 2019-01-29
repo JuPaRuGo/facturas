@@ -112,7 +112,7 @@ class AddVehiclePageState extends State<AddVehiclePage>{
             splashColor: Colors.blueGrey,
             onPressed: () {
               this._AddNewVehicle();
-              this._launchFirstScreen();
+
             },
           ),
         ),
@@ -172,6 +172,7 @@ class AddVehiclePageState extends State<AddVehiclePage>{
         VehiculoMensualidad _car=new VehiculoMensualidad(_placaAlfabetica+"-"+_placaNumerica, now.toString(), selectedDate.add(new Duration(days: 31)).toString());
         vehiculosMensuales.add(_car);
         _PersistMonthlyVehicles();
+        this._launchFirstScreen();
       });
   }
 
