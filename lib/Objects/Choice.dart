@@ -5,6 +5,7 @@ class Choice {
 
   final String title;
   final IconData icon;
+
 }
 
 
