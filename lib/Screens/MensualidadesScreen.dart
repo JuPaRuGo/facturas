@@ -15,7 +15,6 @@ class MensualitiesScreen extends StatefulWidget{
   MensualitiesScreen({Key key}): super(key: key);
   @override
   _StateMensualities createState()=> _StateMensualities();
-
 }
 class _StateMensualities extends State<MensualitiesScreen> {
   List<VehiculoMensualidad> vehiculos;
@@ -23,21 +22,16 @@ class _StateMensualities extends State<MensualitiesScreen> {
   String json_string;
   DateTime selectedDate = DateTime.now();
   int lastIndex;
-
   @override
   void initState() {
     super.initState();
     vehiculos=new List<VehiculoMensualidad>();
+    this.getLastIndex();
     this.getCarsFromJson(); //primero se obtienen del json
     if(vehiculos==null){//si no se encontro nada del json se busca del internet
+      print("se encontro nulo en mensualidades");
       vehiculos = List<VehiculoMensualidad>();
-      _fetchData("");
-      this._PersistMonthlyVehicles();
     }
-    if(vehiculos==null){
-      vehiculos=new List<VehiculoMensualidad>();
-    }
-
   }
   @override
   Widget build(BuildContext context) {
@@ -79,6 +73,7 @@ class _StateMensualities extends State<MensualitiesScreen> {
                         splashColor: Colors.blueGrey,
                         onPressed: () {
                           _fetchData("");
+                          this._showDialog();
                         },
                       ),
 
@@ -141,7 +136,7 @@ class _StateMensualities extends State<MensualitiesScreen> {
                             controlAffinity: ListTileControlAffinity.leading,
                             onChanged: (bool val) {
                               ItemChange(val, index);
-                              this._PersistMonthlyVehicles();
+                              print("cambio c1");
                             }
                         ),
                       ),
@@ -153,8 +148,8 @@ class _StateMensualities extends State<MensualitiesScreen> {
                             title: new Text("Tarde"),
                             controlAffinity: ListTileControlAffinity.leading,
                             onChanged: (bool val) {
+                              print("cambio c2");
                               ItemChangeCheckBox2(val, index);
-                              this._PersistMonthlyVehicles();
                             }
                         )
                         ,
@@ -181,7 +176,6 @@ class _StateMensualities extends State<MensualitiesScreen> {
       });
   }
   void ItemChangeCheckBox2(bool val,int index){
-
       setState(() {
         String estado="0";
         if(val){
@@ -204,8 +198,10 @@ class _StateMensualities extends State<MensualitiesScreen> {
     setState(() {
       isLoading = false;
     });
+    for(var i=0;i<vehiculos.length;i++){
+      vehiculos[i].fillBoleans();
+    }
   }
-
   _fetchData(String param) async {
     if(param.length>0){
       setState(() {
@@ -254,11 +250,6 @@ class _StateMensualities extends State<MensualitiesScreen> {
     }
 
   }
-  void saveDataInPreferences() async{
-    final String membershipKey = 'jsoncarsm'; // maybe use your domain + appname
-    SharedPreferences sp = await SharedPreferences.getInstance();
-    await sp.setString(membershipKey, json.encode(vehiculos));
-  }
   Future<Null> _selectDate(BuildContext context) async {
     final DateTime picked = await showDatePicker(
         context: context,
@@ -273,16 +264,16 @@ class _StateMensualities extends State<MensualitiesScreen> {
   }
 
 
-  void SubirVehiculos(){
+  void SubirVehiculos() async{
       print("Subiendo");
-      this.getLastIndex();
-      for(var i=lastIndex;i<vehiculos.length;i++){
+
+      for(var i=0;i<vehiculos.length;i++){//no funciono lo del last
         VehiculoMensualidad v=vehiculos[i];
         var client = new http.Client();
         String url="http://ruedadifusion.com/JP/Parqueadero/AddMonthlyVehicle.php";
         client.post(
             url,
-            body: {"entrada": v.FechaEntrada, "placa": v.placa })
+            body: {"entrada": v.FechaEntrada, "placa": v.placa})
             .then((response) => print(response.body))
             .whenComplete(client.close);
       }
@@ -290,15 +281,17 @@ class _StateMensualities extends State<MensualitiesScreen> {
       for(var i=0;i<vehiculos.length;i++){
         VehiculoMensualidad v=vehiculos[i];
         var client = new http.Client();
+        print("valor de select date para subir: "+DateFormat("yyy-MM-dd").format(selectedDate).toString());
         String url="http://ruedadifusion.com/JP/Parqueadero/AddToRegister.php";
         client.post(
             url,
-            body: {"fecha": selectedDate, "id": v.placa,"m": v.MananaJson, "t": v.TardeJson })
+            body: {"fecha": DateFormat("yyy-MM-dd").format(selectedDate).toString(), "id": v.idVehiculo,"m": v.MananaJson, "t": v.TardeJson })
             .then((response) => print(response.body))
             .whenComplete(client.close);
       }
   }
   void _PersistMonthlyVehicles() async{
+      print("Guardando");
       final String membershipKey = 'jsoncarsm'; // maybe use your domain + appname
       SharedPreferences sp = await SharedPreferences.getInstance();
       await sp.setString(membershipKey, json.encode(vehiculos));
@@ -307,11 +300,57 @@ class _StateMensualities extends State<MensualitiesScreen> {
     final response =
         await http.get('http://ruedadifusion.com/JP/Parqueadero/GetLastIndex.php');
     if (response.statusCode == 200) {
-      lastIndex=int.parse(response.body);
+      print("rta "+response.body);
+      setState(() {
+        lastIndex=int.parse(response.body);
+
+      });
     } else {
       // If that call was not successful, throw an error.
       throw Exception('Failed to load post');
     }
 
   }
+  void _showDialog() {
+    // flutter defined function
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        // return object of type Dialog
+        return AlertDialog(
+          title: new Text("Traeras los registros del Internet"),
+          content: new Text("Esto borrara los archivos de ahora"),
+          actions: <Widget>[
+            // usually buttons at the bottom of the dialog
+            new FlatButton(
+              child: new Text("Cerrar"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            new FlatButton(
+              child: new Text("Aceptar"),
+              onPressed: () {
+                _fetchData("");
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    this._PersistMonthlyVehicles();
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+  }
+
+
 }

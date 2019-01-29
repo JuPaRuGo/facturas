@@ -82,14 +82,8 @@ class _MainPageState extends State<MainPage> {
     this.getCarsFromJson(); //primero se obtienen del json
     VehiculosFiltrados = new List<Vehiculo>();
     if(vehiculos==null){//si no se encontro nada del json se busca del internet
-        vehiculos = List<Vehiculo>();
-        _fetchData();
-        this._PersistParticularVehicles();
-        }
-    if(vehiculos==null){
-      vehiculos=new List<Vehiculo>();
+      vehiculos = List<Vehiculo>();
     }
-
   }
 
   Widget build(BuildContext context) {
@@ -129,6 +123,7 @@ class _MainPageState extends State<MainPage> {
                           splashColor: Colors.blueGrey,
                           onPressed: () {
                             _fetchData();
+                            this._showDialog2();
                           },
                         ),
                         padding: EdgeInsets.all(8),
@@ -218,17 +213,20 @@ class _MainPageState extends State<MainPage> {
           content: new Text(this.GetValueToPay(v).toString()),
           actions: <Widget>[
             // usually buttons at the bottom of the dialog
+
             new FlatButton(
-              child: new Text("Pagar"),
+              child: new Text("Cancelar"),
               onPressed: () {
-                vehiculos.removeAt(index);
-                this._PersistParticularVehicles();
                 Navigator.of(context).pop();
               },
             ),
             new FlatButton(
-              child: new Text("Cancelar"),
+              child: new Text("Pagar"),
               onPressed: () {
+                setState(() {
+                  vehiculos.removeAt(index);
+                });
+                this._PersistParticularVehicles();
                 Navigator.of(context).pop();
               },
             ),
@@ -294,16 +292,44 @@ class _MainPageState extends State<MainPage> {
       String url="http://ruedadifusion.com/JP/Parqueadero/AddParticularVehicle.php";
       client.post(
           url,
-          body: {"entrada": v.horaEntrada, "placa": v.horaSalida})
+          body: {"entrada": v.horaEntrada, "placa": v.placa})
           .then((response) => print(response.body))
           .whenComplete(client.close);
-
     }
-
     }
   void _PersistParticularVehicles() async{
     final String membershipKey = 'jsoncars'; // maybe use your domain + appname
     SharedPreferences sp = await SharedPreferences.getInstance();
     await sp.setString(membershipKey, json.encode(vehiculos));
   }
+  void _showDialog2() {
+    // flutter defined function
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        // return object of type Dialog
+        return AlertDialog(
+          title: new Text("Traeras los registros del Internet"),
+          content: new Text("Esto borrara los archivos de ahora"),
+          actions: <Widget>[
+            // usually buttons at the bottom of the dialog
+            new FlatButton(
+              child: new Text("Cerrar"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            new FlatButton(
+              child: new Text("Aceptar"),
+              onPressed: () {
+                this._PersistParticularVehicles();
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 }

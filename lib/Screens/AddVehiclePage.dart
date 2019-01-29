@@ -91,7 +91,7 @@ class AddVehiclePageState extends State<AddVehiclePage>{
                     padding: EdgeInsets.all(8.0),
                     child: TextField(
                         controller: controller,
-                        keyboardType: TextInputType.number,
+                        keyboardType: TextInputType.text,
                         decoration: const InputDecoration(
                             labelText: 'Placas Numericas')
                     ),
