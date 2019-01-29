@@ -8,8 +8,8 @@ class VehiculoMensualidad {
   String idVehiculo;
   String FechaEntrada;
   String FechaDeVencimiento;
-  String MananaJson;
-  String TardeJson;
+  String MananaJson="0";
+  String TardeJson="0";
   bool Manana=false;
   bool Tarde=false;
 

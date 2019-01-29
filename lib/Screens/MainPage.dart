@@ -1,10 +1,17 @@
 import 'dart:convert';
+import 'package:facturas/Objects/Choice.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:json_annotation/json_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import '../Objects/Vehiculo.dart';
+
+const List<Choice> choices = const <Choice>[
+  const Choice(title: 'Traer', icon: Icons.get_app),
+  const Choice(title: 'Subir', icon: Icons.cloud_upload),
+
+];
 
 class MainPage extends StatefulWidget {
   MainPage({ Key key }) : super(key: key);
@@ -16,6 +23,10 @@ class _MainPageState extends State<MainPage> {
   List<Vehiculo> vehiculos;
   var isLoading = false;
   String json_string;
+
+
+  Choice _selectedChoice = choices[0]; // The app's "state".
+
   getCarsFromJson() async{
     setState(() {
       isLoading = true;
@@ -46,6 +57,7 @@ class _MainPageState extends State<MainPage> {
     } else {
       throw Exception('Failed to load cars');
     }
+    this._PersistParticularVehicles();
   }
 
   // final formKey = new GlobalKey<FormState>();
@@ -96,42 +108,7 @@ class _MainPageState extends State<MainPage> {
                 flex: 10,
                 child: _buildList(),
               ),
-              new Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Container(
-                        child: new RaisedButton(
-                          child: const Text('Subir'),
-                          color: Colors.indigo,
-                          textColor: Colors.white,
-                          elevation: 4.0,
-                          splashColor: Colors.blueGrey,
-                          onPressed: () {
-                            SubirVehiculos();
-                          },
-                        ),
-                        padding: EdgeInsets.all(8),
-                      ),
-                      Container(
-                        child: new RaisedButton(
-                          child: const Text('Traer'),
-                          color: Colors.teal,
-                          textColor: Colors.white,
-                          elevation: 4.0,
-                          splashColor: Colors.blueGrey,
-                          onPressed: () {
-                            _fetchData();
-                            this._showDialog2();
-                          },
-                        ),
-                        padding: EdgeInsets.all(8),
-                      ),
 
-                    ],
-                  )
-              ),
             ],
           )
       ),
@@ -148,6 +125,20 @@ class _MainPageState extends State<MainPage> {
         onPressed: _searchPressed,
 
       ),
+      actions: <Widget>[
+        PopupMenuButton<Choice>(
+          onSelected: _select,
+          itemBuilder: (BuildContext context) {
+            return choices.map((Choice choice) {
+              return PopupMenuItem<Choice>(
+                value: choice,
+                child: Text(choice.title),
+              );
+            }).toList();
+          },
+        ),
+
+      ],
     );
   }
 
@@ -322,7 +313,8 @@ class _MainPageState extends State<MainPage> {
             new FlatButton(
               child: new Text("Aceptar"),
               onPressed: () {
-                this._PersistParticularVehicles();
+                print('Aceptado');
+                _fetchData();
                 Navigator.of(context).pop();
               },
             ),
@@ -332,4 +324,32 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
+  @override
+  void reassemble() {
+    super.reassemble();
+  }
+
+  void _select(Choice choice) {
+    // Causes the app to rebuild with the new _selectedChoice.
+    print("se selecciono el "+choice.title);
+    if(choice==choices[0]){//traer
+      this._showDialog2();
+
+    }else{
+      if(choice==choices[1]){//subir
+        SubirVehiculos();
+
+      }
+
+    }
+    setState(() {
+      _selectedChoice = choice;
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    this._PersistParticularVehicles();
+  }
 }

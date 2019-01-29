@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:facturas/Objects/Choice.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -9,6 +10,13 @@ import 'dart:async';
 import 'package:flutter_calendar/flutter_calendar.dart';
 
 import '../Objects/VehiculoMensualidad.dart';
+
+const List<Choice> choices = const <Choice>[
+  const Choice(title: 'Traer', icon: Icons.get_app),
+  const Choice(title: 'Subir Mensualidades', icon: Icons.file_upload),
+  const Choice(title: 'Subir Registro', icon: Icons.cloud_upload),
+  const Choice(title: 'Seleccionar Fecha', icon: Icons.calendar_today),
+];
 
 class MensualitiesScreen extends StatefulWidget{
 
@@ -22,6 +30,9 @@ class _StateMensualities extends State<MensualitiesScreen> {
   String json_string;
   DateTime selectedDate = DateTime.now();
   int lastIndex;
+  String dateNow=DateFormat("yyy-MM-dd").format(DateTime.now()).toString();
+
+  Choice _selectedChoice = choices[0]; // The app's "state".
   @override
   void initState() {
     super.initState();
@@ -38,6 +49,20 @@ class _StateMensualities extends State<MensualitiesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Mensualidades"),
+        actions: <Widget>[
+          PopupMenuButton<Choice>(
+            onSelected: _select,
+            itemBuilder: (BuildContext context) {
+              return choices.map((Choice choice) {
+                return PopupMenuItem<Choice>(
+                  value: choice,
+                  child: Text(choice.title),
+                );
+              }).toList();
+            },
+          ),
+
+        ],
       ),
       body: Container(
           child: Column(
@@ -46,52 +71,6 @@ class _StateMensualities extends State<MensualitiesScreen> {
               flex: 10,
               child: _buildList(),
             ),
-            new Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Container(
-                    child: new RaisedButton(
-                      child: const Text('Subir'),
-                      color: Colors.indigo,
-                      textColor: Colors.white,
-                      elevation: 4.0,
-                      splashColor: Colors.blueGrey,
-                      onPressed: () {
-                        SubirVehiculos();
-                      },
-                    ),
-                    padding: EdgeInsets.all(8),
-                    ),
-                    Container(
-                      child: new RaisedButton(
-                        child: const Text('Traer'),
-                        color: Colors.teal,
-                        textColor: Colors.white,
-                        elevation: 4.0,
-                        splashColor: Colors.blueGrey,
-                        onPressed: () {
-                          _fetchData("");
-                          this._showDialog();
-                        },
-                      ),
-
-                      padding: EdgeInsets.all(8),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.calendar_today),
-                      tooltip: 'Calendario',
-                      onPressed: () {
-                        setState(() {
-                          _selectDate(context);
-                          print("fecha"+DateFormat("yyy-MM-dd").format(selectedDate).toString());
-                          this._fetchData(DateFormat("yyy-MM-dd").format(selectedDate).toString());
-                        }); },
-                    )
-                  ],
-                )
-            ),  
             ],
           )
       ),
@@ -182,6 +161,7 @@ class _StateMensualities extends State<MensualitiesScreen> {
           estado="1";
         }
         vehiculos[index].TardeJson=estado;
+        print("Se obtuvo: "+vehiculos[index].TardeJson);
         vehiculos[index].Tarde=val;
       });
 
@@ -248,7 +228,7 @@ class _StateMensualities extends State<MensualitiesScreen> {
         throw Exception('Failed to load photos');
       }
     }
-
+    this._PersistMonthlyVehicles();
   }
   Future<Null> _selectDate(BuildContext context) async {
     final DateTime picked = await showDatePicker(
@@ -277,18 +257,21 @@ class _StateMensualities extends State<MensualitiesScreen> {
             .then((response) => print(response.body))
             .whenComplete(client.close);
       }
+  }
+  void SubirRegistro() async{
+    print("subiendo reg");
 
-      for(var i=0;i<vehiculos.length;i++){
-        VehiculoMensualidad v=vehiculos[i];
-        var client = new http.Client();
-        print("valor de select date para subir: "+DateFormat("yyy-MM-dd").format(selectedDate).toString());
-        String url="http://ruedadifusion.com/JP/Parqueadero/AddToRegister.php";
-        client.post(
-            url,
-            body: {"fecha": DateFormat("yyy-MM-dd").format(selectedDate).toString(), "id": v.idVehiculo,"m": v.MananaJson, "t": v.TardeJson })
-            .then((response) => print(response.body))
-            .whenComplete(client.close);
-      }
+    for(var i=0;i<vehiculos.length;i++){//no funciono lo del last
+      VehiculoMensualidad v=vehiculos[i];
+      var client = new http.Client();
+      print("valor tarde ="+v.TardeJson);
+      String url="http://ruedadifusion.com/JP/Parqueadero/AddToRegister.php";
+      client.post(
+          url,
+          body: {"fecha": dateNow,"id":v.idVehiculo,"m":v.MananaJson,"t":v.TardeJson})
+          .then((response) => print(response.body))
+          .whenComplete(client.close);
+    }
   }
   void _PersistMonthlyVehicles() async{
       print("Guardando");
@@ -309,7 +292,6 @@ class _StateMensualities extends State<MensualitiesScreen> {
       // If that call was not successful, throw an error.
       throw Exception('Failed to load post');
     }
-
   }
   void _showDialog() {
     // flutter defined function
@@ -331,6 +313,7 @@ class _StateMensualities extends State<MensualitiesScreen> {
             new FlatButton(
               child: new Text("Aceptar"),
               onPressed: () {
+                print('Aceptado');
                 _fetchData("");
                 Navigator.of(context).pop();
               },
@@ -351,6 +334,35 @@ class _StateMensualities extends State<MensualitiesScreen> {
   void reassemble() {
     super.reassemble();
   }
+  void _select(Choice choice) {
+    // Causes the app to rebuild with the new _selectedChoice.
+    print("se selecciono el "+choice.title);
+    if(choice==choices[0]){//traer
 
+      this._showDialog();
+    }else{
+      if(choice==choices[1]){//subir
+        SubirVehiculos();
+
+      }else{
+          if(choice==choices[2]){//subir
+            SubirRegistro();
+
+          }else{// es el ultimo seleccionar fecha
+            setState(() {
+              _selectDate(context);
+              print("fecha"+DateFormat("yyy-MM-dd").format(selectedDate).toString());
+              this._fetchData(DateFormat("yyy-MM-dd").format(selectedDate).toString());
+            });
+
+          }
+      }
+
+    }
+    setState(() {
+      _selectedChoice = choice;
+    });
+  }
 
 }
+
