@@ -20,7 +20,7 @@ class AddVehiclePageState extends State<AddVehiclePage>{
   List<VehiculoMensualidad> vehiculosMensuales = [];
   String _placaAlfabetica = "";
   String _placaNumerica = "";
-
+  DateTime selectedDate= DateTime.parse(DateFormat("yyy-MM-dd").format(DateTime.now()));
   @override
   void initState() {
     super.initState();
@@ -142,10 +142,8 @@ class AddVehiclePageState extends State<AddVehiclePage>{
           vehiculos.add(_vehiculo);
           _PersistParticularVehicles();
         }else{
-          var now=DateFormat("yyy-MM-dd").format(DateTime.now());
-          VehiculoMensualidad _car=new VehiculoMensualidad(_placaAlfabetica+"-"+_placaNumerica, now.toString(), "");
-          vehiculosMensuales.add(_car);
-          _PersistMonthlyVehicles();
+          _selectDate(context);
+
         }
       }
     }
@@ -161,4 +159,20 @@ class AddVehiclePageState extends State<AddVehiclePage>{
     SharedPreferences sp = await SharedPreferences.getInstance();
     await sp.setString(membershipKey, json.encode(vehiculosMensuales));
   }
+  Future<Null> _selectDate(BuildContext context) async {
+    final DateTime picked = await showDatePicker(
+        context: context,
+        initialDate: selectedDate,
+        firstDate: DateTime(2015, 8),
+        lastDate: DateTime(2101));
+    if (picked != null && picked != selectedDate)
+      setState(() {
+        selectedDate = picked;
+        var now=DateFormat("yyy-MM-dd").format(selectedDate);
+        VehiculoMensualidad _car=new VehiculoMensualidad(_placaAlfabetica+"-"+_placaNumerica, now.toString(), selectedDate.add(new Duration(days: 31)).toString());
+        vehiculosMensuales.add(_car);
+        _PersistMonthlyVehicles();
+      });
+  }
+
 }
