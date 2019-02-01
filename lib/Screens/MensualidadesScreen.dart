@@ -153,6 +153,7 @@ class _StateMensualities extends State<MensualitiesScreen> {
         vehiculos[index].MananaJson=estado;
         vehiculos[index].Manana=val;
       });
+      this._PersistMonthlyVehicles();
   }
   void ItemChangeCheckBox2(bool val,int index){
       setState(() {
@@ -164,7 +165,7 @@ class _StateMensualities extends State<MensualitiesScreen> {
         print("Se obtuvo: "+vehiculos[index].TardeJson);
         vehiculos[index].Tarde=val;
       });
-
+      this._PersistMonthlyVehicles();
   }
   Future getCarsFromJson() async{
     setState(() {
@@ -260,11 +261,11 @@ class _StateMensualities extends State<MensualitiesScreen> {
   }
   void SubirRegistro() async{
     print("subiendo reg");
-
     for(var i=0;i<vehiculos.length;i++){//no funciono lo del last
       VehiculoMensualidad v=vehiculos[i];
       var client = new http.Client();
-      print("valor tarde ="+v.TardeJson);
+      print("fecha:"+ dateNow+" id: "+v.idVehiculo+" m:"+v.MananaJson+" t:"+v.TardeJson);
+
       String url="http://ruedadifusion.com/JP/Parqueadero/AddToRegister.php";
       client.post(
           url,
